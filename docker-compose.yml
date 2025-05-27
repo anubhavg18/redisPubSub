@@ -5,30 +5,41 @@ services:
     image: mongo
     ports:
       - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
 
   redis:
     image: redis
     ports:
       - "6379:6379"
 
-  receiver:
-    build: .
-    command: node src/receiver.js
+  listener:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - mongo
+      - redis
     environment:
-      - REDIS_HOST=redis
-      - MONGO_URL=mongodb://mongo:27017/pubsubDB
+      - MONGO_URL=mongodb://mongo:27017
+      - REDIS_URL=redis://redis:6379
     ports:
       - "3000:3000"
-    depends_on:
-      - mongo
-      - redis
+    command: ["node", "src/listener.js"]
 
-  listener:
-    build: .
-    command: node src/listener.js
-    environment:
-      - REDIS_HOST=redis
-      - MONGO_URL=mongodb://mongo:27017/pubsubDB
+  receiver:
+    build:
+      context: .
+      dockerfile: Dockerfile
     depends_on:
       - mongo
       - redis
+    environment:
+      - MONGO_URL=mongodb://mongo:27017
+      - REDIS_URL=redis://redis:6379
+    ports:
+      - "3001:3000"
+    command: ["node", "src/receiver.js"]
+
+volumes:
+  mongo-data:

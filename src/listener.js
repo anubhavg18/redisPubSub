@@ -3,7 +3,7 @@ const { connectDB } = require('./database');
 
 (async () => {
   const db = await connectDB();
-const redis = new Redis({ host: process.env.REDIS_HOST || 'localhost' });
+  const redis = new Redis('redis://redis:6379');
 
   redis.subscribe('user.created', () => {
     console.log('Subscribed to user.created');
@@ -16,8 +16,8 @@ const redis = new Redis({ host: process.env.REDIS_HOST || 'localhost' });
       modified_at: new Date().toISOString(),
     };
 
-    await db.collection('secondTable').insertOne(newData);
-    console.log('secondTable data saved by listener');
+    let dbRes = await db.collection('secondTable').insertOne(newData);
+    console.log('secondTable data saved by listener', dbRes);
   });
 
   redis.on('error', (err) => {
